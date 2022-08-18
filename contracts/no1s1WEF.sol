@@ -26,8 +26,8 @@ contract no1s1WEF {
     bool no1s1Occupation;                      // Whether no1s1 is occupied
 
     // Usage variables
-    uint256 private constant MEDITATION_PRICE = 0.001 ether;    // Price per minute meditation in no1s1
-    uint256 private constant ESCROW_AMOUNT = 0.1 ether;         // Minimum escrow amount to be paid to meditate
+    uint256 private constant MEDITATION_PRICE = 0.0001 ether;    // Price per minute meditation in no1s1
+    uint256 private constant ESCROW_AMOUNT = 0.01 ether;         // Minimum escrow amount to be paid to meditate
 
     // User and Usage duration counters
     uint256 counterUsers;
@@ -139,14 +139,10 @@ contract no1s1WEF {
         operational = mode;
     }
 
-    /********************************************************************************************/
-    /*               SMART CONTRACT FUNCTIONS                                                   */
-    /********************************************************************************************/
-
     /**
     * @dev function to modify the main state variable no1s1Accessability. This function is only for admins (not callable from app contract) to reset this state.
     */
-    function setAccessabilityStatus(bool mode) external requireIsOperational
+    function setAccessabilityStatus(bool mode) external requireIsOperational requireContractOwner
     {
         no1s1Accessability = mode;
     }
@@ -154,10 +150,14 @@ contract no1s1WEF {
     /**
     * @dev function to modify the main state variable no1s1Occupation. This function is only for admins (not callable from app contract) to reset this state in case exiting the space is not detected
     */
-    function setOccupationStatus(bool mode) external requireIsOperational
+    function setOccupationStatus(bool mode) external requireIsOperational requireContractOwner
     {
         no1s1Occupation = mode;
     }
+
+    /********************************************************************************************/
+    /*               SMART CONTRACT FUNCTIONS                                                   */
+    /********************************************************************************************/
 
     /**
     * @dev buy function that is triggered from backend when scanning a valid QR code, opens door

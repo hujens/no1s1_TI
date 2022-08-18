@@ -8,7 +8,7 @@ import "../node_modules/@openzeppelin/contracts/utils/math/SafeMath.sol";
 /* no1s1 App Smart Contract                         */
 /************************************************** */
 
-contract no1s1App {
+contract no1s1App_UZH {
     using SafeMath for uint256;
 
     /********************************************************************************************/
@@ -136,15 +136,6 @@ contract no1s1App {
     }
 
     /**
-    * @dev function for backend to trigger storing the current state of no1s1 (daily)
-    * Pass address of function caller to data contract to enable role modifier
-    */
-    function no1s1InfoLog(uint256 _Time) external requireBackend
-    {
-        no1s1Data.no1s1InfoLog(_Time);
-    }
-
-    /**
     * @dev buy function to access no1s1, only pass _selectedDuration and _username!
     */
     function buy(uint256 _selectedDuration, string calldata _username) external payable
@@ -173,9 +164,9 @@ contract no1s1App {
     /**
     * @dev function triggered by user after leaving no1s1. resets the occupancy state, pays back escrow, and sends out confirmation NFT
     */
-    function exit(bool _doorOpened, uint256 _actualDuration, bytes32 _key) external requireBackend
+    function exit(bool _doorOpened, uint256 _actualDuration, bytes32 _key, uint256 _time) external requireBackend
     {
-        no1s1Data.exit(_doorOpened, _actualDuration, _key);
+        no1s1Data.exit(_doorOpened, _actualDuration, _key, _time, MEDITATION_PRICE);
     }
 
     /**
@@ -219,7 +210,7 @@ contract no1s1App {
     /**
     * @dev get latest entries of UsageLog (max 10)
     */
-    function getUsageLog() external view returns(uint256[] memory users, uint256[] memory balances, uint256[] memory durations)
+    function getUsageLog() external view returns(uint256[] memory users, uint256[] memory balances, uint256[] memory escrows, uint256[] memory durations)
     {
         return no1s1Data.getUsageLog();
     }
@@ -267,17 +258,16 @@ interface No1s1Data {
     function setAccessabilityStatus(bool mode) external;
     function setOccupationStatus(bool mode) external;
     function broadcastData(uint256 _Bcurrent,uint256 _Bvoltage, uint256 _BSOC,uint256 _Pvoltage, uint256 _Senergy, uint256 _Time, uint256 FULL_VALUE, uint256 GOOD_VALUE, uint256 LOW_VALUE) external;
-    function no1s1InfoLog(uint256 _Time) external;
     function buy(uint256 _selectedDuration, address txSender, string calldata _username, uint256 ESCROW_AMOUNT, uint256 MAX_DURATION, uint256 GOOD_DURATION, uint256 LOW_DURATION) external payable;
     function checkAccess(bytes32 _key, uint256 GOOD_DURATION, uint256 LOW_DURATION) external;
     function checkActivity(bool _pressureDetected, bytes32 _key) external;
-    function exit(bool _doorOpened, uint256 _actualDuration, bytes32 _key) external;
+    function exit(bool _doorOpened, uint256 _actualDuration, bytes32 _key, uint256 _time, uint256 MEDITATION_PRICE) external;
     function refundEscrow(address _sender, string calldata _username, uint256 MEDITATION_PRICE) external;
     function isOperational() external view returns(bool);
     function howAmI() external view returns (bool accessability, bool occupation, uint256 batteryState, uint256 totalUsers, uint256 totalDuration, uint256 myBalance);
     function whoAmI() external view returns(address no1s1Address);
     function howRichAmI() external view returns(uint256 no1s1Balance);
-    function getUsageLog() external view returns(uint256[] memory users, uint256[] memory balances, uint256[] memory durations);
+    function getUsageLog() external view returns(uint256[] memory users, uint256[] memory balances, uint256[] memory escrows, uint256[] memory durations);
     function checkBuyStatus(uint256 MEDITATION_PRICE, uint256 FULL_DURATION, uint256 GOOD_DURATION, uint256 LOW_DURATION) external view returns(uint256 batteryState, uint256 availableMinutes, uint256 costPerMinute , uint256 lastUpdate);
     function checkLastTechLogs() external view returns(uint256 pvVoltage, uint256 systemPower, uint256 batteryChargeState, uint256 batteryCurrency, uint256 batteryVoltage);
     function checkUserKey(bytes32 _key) external view returns(uint256 meditationDuration, bool accessed, uint256 actualDuration, bool left, uint256 escrow);

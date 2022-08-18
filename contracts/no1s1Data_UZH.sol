@@ -11,7 +11,7 @@ import "../node_modules/@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 // TODO: is ERC721
 
-contract no1s1Data {
+contract no1s1Data_UZH {
     using SafeMath for uint256;
 
     /********************************************************************************************/
@@ -51,10 +51,10 @@ contract no1s1Data {
 
     // Data structure of no1s1 usage log (daily)
     struct UsageLog{
-        uint256 totalBalance;
-        uint256 totalEscrow;
-        uint256 totalUsers;
-        uint256 totalDuration;
+        uint256 Earnings;
+        uint256 Escrow;
+        uint256 Users;
+        uint256 Duration;
         uint256 time;
     }
 
@@ -84,8 +84,6 @@ contract no1s1Data {
     event DeAuthorizedContract(address appContract);
     // Emitted when new tech log added
     event TechLogUpdate(uint256 batteryCurrency,uint256 batteryVoltage, uint256 batteryStateOfCharge,uint256 pvVoltage, uint256 systemEnergy, uint256 logTime);
-    // Emitted when new usage log added
-    event UsageLogUpdate(uint256 no1s1Balance, uint256 escrowBalance, uint256 userCounter, uint256 durationCounter, uint256 logTime);
     // Emitted when new purchase was made
     event newQRcode(bytes32 qrCode);
     // Emitted when access suceeded
@@ -267,25 +265,6 @@ contract no1s1Data {
     }
 
     /**
-    * @dev function for backend to trigger storing the current state of no1s1 (daily)
-    */
-    function no1s1InfoLog(uint256 _Time) external isCallerAuthorized requireIsOperational
-    {
-        // Add new usage data log
-        no1s1UsageLogs.push(UsageLog(
-          {
-            totalBalance: address(this).balance,
-            totalEscrow: escrowBalance,
-            totalUsers: counterUsers,
-            totalDuration: counterDuration,
-            time: _Time
-          }
-        ));
-        // Emit event
-        emit UsageLogUpdate(address(this).balance, escrowBalance, counterUsers, counterDuration, _Time);
-    }
-
-    /**
     * @dev buy function to access no1s1, returns QR code
     */
     function buy(uint256 _selectedDuration, address txSender, string calldata _username, uint256 ESCROW_AMOUNT, uint256 MAX_DURATION, uint256 GOOD_DURATION, uint256 LOW_DURATION) external payable isCallerAuthorized requireIsOperational checkAccessability checkOccupancy
@@ -392,7 +371,7 @@ contract no1s1Data {
     * @dev function triggered by backend after leaving no1s1. resets the occupancy state.
     */
     // TODO: careful with input format of _actualDuration [minutes]
-    function exit(bool _doorOpened, uint256 _actualDuration, bytes32 _key) external isCallerAuthorized requireIsOperational
+    function exit(bool _doorOpened, uint256 _actualDuration, bytes32 _key, uint256 _time, uint256 MEDITATION_PRICE) external isCallerAuthorized requireIsOperational
     {
         // check whether user has accessed
         require(no1s1Users[_key].accessed == true, "The user has not meditated yet!");
@@ -412,6 +391,16 @@ contract no1s1Data {
             left: true,
             paidEscrow: escrow
         });
+        // Add new usage data log
+        no1s1UsageLogs.push(UsageLog(
+          {
+            Earnings: address(this).balance.sub(escrowBalance).add(_actualDuration.mul(uint256(MEDITATION_PRICE))),
+            Escrow: escrowBalance,
+            Users: counterUsers,
+            Duration: counterDuration,
+            time: _time
+          }
+        ));
         // emit event
         emit exitSuccessful(_actualDuration);
     }
@@ -496,35 +485,19 @@ contract no1s1Data {
     /**
     * @dev get latest entries of UsageLog (max 10)
     */
-    function getUsageLog() external view returns(uint256[] memory users, uint256[] memory balances, uint256[] memory durations)
+    function getUsageLog() external view returns(uint256[] memory users, uint256[] memory balances, uint256[] memory escrows, uint256[] memory durations)
     {
-        uint numberOfRecords = 10;
-        if (no1s1UsageLogs.length >= numberOfRecords){
-            uint256[] memory tenUsers = new uint256[](numberOfRecords);
-            uint256[] memory tenBalances = new uint256[](numberOfRecords);
-            uint256[] memory tenEscrows = new uint256[](numberOfRecords);
-            uint256[] memory tenDuration = new uint256[](numberOfRecords);
-            for (uint i = 0; i < numberOfRecords; i++){
-                tenUsers[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].totalUsers;
-                tenBalances[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].totalBalance;
-                tenEscrows[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].totalEscrow;
-                tenDuration[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].totalDuration;
+            uint256[] memory Users = new uint256[](counterUsers);
+            uint256[] memory Balances = new uint256[](counterUsers);
+            uint256[] memory Escrows = new uint256[](counterUsers);
+            uint256[] memory Durations = new uint256[](counterUsers);
+            for (uint i = 0; i < counterUsers; i++){
+                Users[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].Users;
+                Balances[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].Earnings;
+                Escrows[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].Escrow;
+                Durations[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].Duration;
             }
-            return (tenUsers, tenBalances, tenDuration);
-        }
-        else if (no1s1UsageLogs.length < numberOfRecords){
-            uint256[] memory xUsers = new uint256[](no1s1UsageLogs.length);
-            uint256[] memory xBalances = new uint256[](no1s1UsageLogs.length);
-            uint256[] memory xEscrows = new uint256[](no1s1UsageLogs.length);
-            uint256[] memory xDuration = new uint256[](no1s1UsageLogs.length);
-            for (uint i = 0; i < no1s1UsageLogs.length; i++){
-                xUsers[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].totalUsers;
-                xBalances[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].totalBalance;
-                xEscrows[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].totalEscrow;
-                xDuration[i] = no1s1UsageLogs[no1s1UsageLogs.length-1-i].totalDuration;
-            }
-            return (xUsers, xBalances, xDuration);
-        }
+            return (Users, Balances, Escrows, Durations);
     }
 
     /**
@@ -583,8 +556,13 @@ contract no1s1Data {
     /********************************************************************************************/
 
     /**
-    * @dev Payable fallback function to enable the contract to receive direct payments.
+    * @dev Payable fallback function.
     */
     fallback () external payable isCallerAuthorized requireIsOperational {}
+
+    /**
+    * @dev Payable receive function to enable the contract to receive direct payments.
+    */
+    receive() external payable {}
 
 }
